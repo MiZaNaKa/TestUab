@@ -1,8 +1,12 @@
-import React, {  useEffect, useState } from 'react';
-import Action from "./redux/actions/movie"
-import { movieStore } from "./redux/store/movie"
-import { View, Text, Image, StyleSheet, ImageBackground, ScrollView,Button } from 'react-native'
+import React, {  useEffect, useState,useCallback } from 'react';
+import { View, Text, Image, StyleSheet, ImageBackground, ScrollView,TouchableOpacity } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useNavigation } from '@react-navigation/native';
+import Save from "../image/like.png"
+import Saved from "../image/heart.png"
+import counterStore from './Store';
+import { observer } from "mobx-react";
+import { useFocusEffect } from '@react-navigation/native';
 const styles = StyleSheet.create({
     container: {
         padding: 10,
@@ -23,14 +27,48 @@ const styles = StyleSheet.create({
         padding: 7,
         borderColor: 'gray',
         marginBottom: 30
+    },
+    imageCenter:{
+        justifyContent: 'center',
+        alignItems: 'center',
+        width: '100%',
+        height: 100,
+    },
+    marginB25:{
+        marginBottom:25
+    },
+    marginT20:{
+        marginTop:20
+    },
+    marginL25:{
+        marginLeft:25
+    },
+    marginT30:{
+        marginTop:30
+    },
+    marginL14:{
+        marginLeft:14
+    },
+    title:{
+        fontSize:18,
+        fontWeight:'800'
+    },
+    backIcon:{
+        width:25,
+        height:25
     }
 });
 
+const Detail = observer((props) => {
 
-function Detail(props) {
     const [data, setData] = useState();
     const [fav, setFav] = useState(false);
-
+    const navigation = useNavigation();
+    useFocusEffect(
+        useCallback(() => {
+            counterStore.clear()
+        }, [])
+    );
     useEffect(() => {
         // declare the data fetching function
         const fetchData = async () => {
@@ -41,7 +79,7 @@ function Detail(props) {
             var asyValue=JSON.parse(value)
             var search= asyValue.filter((x)=>x.id===props.route.params.id)
             if(search.length>0){
-                setFav(true)
+                counterStore.FavAction()
             }
         }
         
@@ -50,76 +88,48 @@ function Detail(props) {
             .catch(console.error);
     }, [])
 
-    useEffect(() => {
-        
-        setData(props.route.params)
-        
-
-
-        // const ddd = movieStore.subscribe(() => {
-        //     console.log('State has changed:', movieStore.getState());
-        // });
-        // console.log("kkt")
-        // const unsubscribe = movieStore.subscribe(() => {
-        //     var value = movieStore.getState().value
-        //     console.log("kkt" + value)
-
-        //     setData(value)
-        // });
-        // return ddd;
+    useEffect(() => {        
+        setData(props.route.params)        
     }, []);
-    const SaveFav=async()=>{
-        var value =await AsyncStorage.getItem('FavList')
-        var asyValue=JSON.parse(value)
-        if(!asyValue){
-            var storeData=[props.route.params]
-            AsyncStorage.setItem("FavList", JSON.stringify(storeData))
-            setFav(true)
-        }
-        else{
-            var value =await AsyncStorage.getItem('FavList')
-            var asyValue=JSON.parse(value)
-            var search= asyValue.filter((x)=>x.id===props.route.params.id)
-            if(search.length===0){
-                var value =await AsyncStorage.getItem('FavList')
-                var asyValue=JSON.parse(value)
-                console.log(asyValue)
-                asyValue.push(props.route.params)
-                AsyncStorage.setItem("FavList", JSON.stringify(asyValue))
-                setFav(true)
-            }
-        }
-    }
+
+   
     return (
         <ScrollView style={styles.container}>
+            <TouchableOpacity onPress={()=>{navigation.goBack()}}>
+                <Image
+                    source={require('../image/backArrow.png')}
+                    style={styles.backIcon}
+                    
+                />
+            </TouchableOpacity>
+            
             {data ?
                 <View>
-                    <View style={{ marginBottom: 20 }}>
-                        <ImageBackground
-                            source={{ uri: "https://media.themoviedb.org/t/p/w220_and_h330_face/"+data.backdrop_path }}
-                            style={{
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                                width: '100%',
-                                height: 300,
-                            }}
-                            resizeMode='contain'
-                        >
-                            
-                        </ImageBackground>
+                    <View style={styles.marginB25}>
+                        <View style={{position:'relative'}}>
+                            <ImageBackground
+                                source={{ uri: "https://media.themoviedb.org/t/p/w220_and_h330_face/"+data.backdrop_path }}
+                                style={styles.imageCenter}
+                                resizeMode='contain'
+                            >
+                            </ImageBackground>
 
-                    </View>
-                    <Text style={{fontSize:18,fontWeight:'800'}}>{data.title}</Text>
-                        <View style={{marginTop:30,marginLeft:12,fontSize:14}}>
-                            <Text>{data.overview}</Text>
-                        </View>
-
-                        <View style={{marginTop:20,marginLeft:23,fontSize:14,marginBottom:30}}><Text>{data.release_date}</Text></View>
-
-                        <View style={{marginBottom:25}}>
-                            <Button title={fav ? "Saved" : "Save"} onPress={SaveFav}/>
+                            <TouchableOpacity style={{position:'absolute',width:25,height:25,top:0,right:0}} onPress={()=>counterStore.SaveFav(props.route.params)}>
+                                <Image
+                                    source={counterStore.fav ? Saved : Save}
+                                    style={styles.backIcon}
+                                    
+                                />
+                            </TouchableOpacity>
                         </View>
                         
+
+                    </View>
+                    <Text style={styles.title}>{data.title} <Text style={{fontSize:11,marginLeft:20}}>   {data.release_date}</Text></Text>
+                    <View style={[styles.marginT30,styles.marginL14]}>
+                        <Text>{data.overview}</Text>
+                    </View>
+
                 </View>
                 :
                 null
@@ -127,6 +137,6 @@ function Detail(props) {
         </ScrollView>
 
     );
-}
+})
 
 export default Detail; 
